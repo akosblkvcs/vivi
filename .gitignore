@@ -9,3 +9,10 @@ __pycache__/
 .env
 .env.*
 !.env.example
+
+data/*
+!data/demos/
+data/demos/*
+!data/demos/.gitkeep
+*.dem
+*.dem.bz2

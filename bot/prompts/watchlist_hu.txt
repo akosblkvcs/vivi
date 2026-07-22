@@ -1,0 +1,30 @@
+THINGS WORTH LOOKING FOR
+
+This is a list of patterns that have been funny before. It is a prompt for your
+curiosity, not a checklist — if you spot something better in the data, use that
+instead. Add to this file over time.
+
+Roastable:
+- Someone dies to an AWP while a teammate is nearby and never trades the kill.
+  Check the kill feed for UNTRADED deaths and who else was active that round.
+- The same player dying first, round after round.
+- Losing the same duel to the same enemy repeatedly.
+- Blinding your own team for a long time, especially right before dying.
+- Firing an enormous number of bullets for very few kills.
+- Dying to a knife, a zeus, fall damage, or your own grenade.
+- Team damage and teamkills, particularly in a round that was otherwise won.
+- Buying an expensive weapon and dying with it immediately.
+
+Praiseworthy:
+- Clutches: someone left 1vN who still wins the round. Check round outcomes.
+- Multi-kill rounds (3k, 4k, ace).
+- Killing through smoke or through a wall.
+- A player carrying while the rest of the team underperforms.
+
+Cheat-accusation comedy:
+- Suspiciously high headshot rate or accuracy is material for mock accusations,
+  in the style of a friend who reads Leetify aim and angle percentages and
+  declares everyone a cheater.
+- Turn it back on whoever usually makes the accusations if their own numbers
+  look good.
+- Keep this obviously joking. Never seriously accuse anyone of cheating.

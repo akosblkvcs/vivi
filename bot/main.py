@@ -1,9 +1,15 @@
+import asyncio
 import logging
 import os
 
 import discord
 from discord import app_commands
 from dotenv import load_dotenv
+
+from bot import config, delivery
+from bot.demo.analysis import build_context
+from bot.demo.workspace import demos_dir, purge_orphans
+from bot.roast import generate_roast
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -30,11 +36,39 @@ client = Vivi()
 async def on_ready() -> None:
     if (user := client.user) is not None:
         logging.info("Connected as %s (%s)", user, user.id)
+    logging.info("DEBUG=%s", config.debug_mode())
+    purge_orphans()
 
 
 @client.tree.command(description="Health check")
 async def ping(interaction: discord.Interaction) -> None:
     await interaction.response.send_message("pong", ephemeral=True)
+
+
+@client.tree.command(description="Parse a demo already on the server and roast the players")
+@app_commands.describe(filename="A .dem file sitting in the server's data/demos directory")
+async def roast(interaction: discord.Interaction, filename: str) -> None:
+    # Only the basename: a filename is user input and must not escape data/demos.
+    demo_path = demos_dir() / os.path.basename(filename)
+    if not demo_path.is_file():
+        await interaction.response.send_message(
+            f"Nincs ilyen demo: `{demo_path.name}`", ephemeral=True
+        )
+        return
+
+    await interaction.response.defer(thinking=True, ephemeral=True)
+    try:
+        # Parsing and the API call both block; keep the gateway heartbeat alive.
+        ctx = await asyncio.to_thread(build_context, str(demo_path))
+        text = await asyncio.to_thread(generate_roast, ctx)
+        await delivery.deliver(client, text)
+    except Exception:
+        logging.exception("roast failed for %s", demo_path.name)
+        await interaction.followup.send("Elszállt a feldolgozás, nézd a logot.", ephemeral=True)
+        return
+
+    where = "DM-ben" if config.debug_mode() else "a csatornába"
+    await interaction.followup.send(f"Kész, elküldtem {where}.", ephemeral=True)
 
 
 def main() -> None:

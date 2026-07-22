@@ -4,12 +4,17 @@ version = "0.1.0"
 description = "Vivi — Discord bot"
 requires-python = ">=3.14"
 dependencies = [
+    "anthropic>=0.117.1",
+    "demoparser2>=0.41.4",
     "discord.py>=2.4",
     "python-dotenv>=1.0",
 ]
 
 [dependency-groups]
-dev = ["ruff>=0.6"]
+dev = [
+    "pandas-stubs>=3.0.3.260530",
+    "ruff>=0.6",
+]
 
 [tool.ruff]
 line-length = 100
