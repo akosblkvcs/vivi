@@ -1,0 +1,121 @@
+version: "0.5"
+ordered_shutdown: true
+
+log_configuration:
+  disable_json: true
+  add_timestamp: true
+  timestamp_format: "06-01-02 15:04:05.000"
+  no_color: true
+  flush_each_line: true
+
+processes:
+  postgres:
+    disabled: false
+    command: docker compose up postgres
+    ready_log_line: "database system is ready to accept connections"
+    log_location: ./logs/postgres.log
+    shutdown:
+      command: docker compose down postgres -t 30
+
+  bot:
+    disabled: false
+    command: |
+      uv sync --locked &&
+      uv run python -m bot.main
+    ready_log_line: "Connected as"
+    log_location: ./logs/bot.log
+    availability:
+      exit_on_end: true
+    depends_on:
+      postgres:
+        condition: process_log_ready
+    shutdown:
+      signal: 15
+      timeout_seconds: 5
+
+  ingest:
+    # Backfill an old demo's metrics without roasting it; baselines need several matches.
+    disabled: true
+    command: uv run python -m bot.demo.cli ingest "$DEMO"
+    log_location: ./logs/ingest.log
+    availability:
+      restart: "no"
+      exit_on_end: false
+    depends_on:
+      postgres:
+        condition: process_log_ready
+
+  baselines:
+    # How this match compares to each player's stored history.
+    disabled: true
+    command: uv run python -m bot.demo.cli baselines "$DEMO"
+    log_location: ./logs/baselines.log
+    availability:
+      restart: "no"
+      exit_on_end: false
+    depends_on:
+      postgres:
+        condition: process_log_ready
+
+  roast:
+    # Full roast to stdout, no Discord round-trip. Needs ANTHROPIC_API_KEY.
+    disabled: true
+    command: uv run python -m bot.demo.cli roast "$DEMO"
+    log_location: ./logs/roast.log
+    availability:
+      restart: "no"
+      exit_on_end: false
+
+  summary:
+    # Exactly the text that gets handed to Claude.
+    disabled: true
+    command: uv run python -m bot.demo.cli summary "$DEMO"
+    log_location: ./logs/summary.log
+    availability:
+      restart: "no"
+      exit_on_end: false
+
+  stats:
+    # Scoreboard and shame board for one demo.
+    disabled: true
+    command: uv run python -m bot.demo.cli stats "$DEMO"
+    log_location: ./logs/stats.log
+    availability:
+      restart: "no"
+      exit_on_end: false
+
+  players:
+    # Every player with their SteamID and how the roster classifies them.
+    disabled: true
+    command: uv run python -m bot.demo.cli players "$DEMO"
+    log_location: ./logs/players.log
+    availability:
+      restart: "no"
+      exit_on_end: false
+
+  discover:
+    # What a demo actually exposes, so stats.py can be matched to reality.
+    disabled: true
+    command: uv run python -m bot.demo.cli discover "$DEMO"
+    log_location: ./logs/discover.log
+    availability:
+      restart: "no"
+      exit_on_end: false
+
+  lint:
+    disabled: true
+    command: |
+      uv run ruff check bot &&
+      uv run ruff format --check bot
+    log_location: ./logs/lint.log
+    availability:
+      restart: "no"
+      exit_on_end: false
+
+  typecheck:
+    disabled: true
+    command: uv run mypy bot
+    log_location: ./logs/typecheck.log
+    availability:
+      restart: "no"
+      exit_on_end: false

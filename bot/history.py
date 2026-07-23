@@ -60,7 +60,7 @@ def demo_key(path: str | Path) -> str:
     twice, or renamed, is still recognised as one match.
     """
     digest = hashlib.sha256()
-    with open(path, "rb") as handle:
+    with Path(path).open("rb") as handle:
         while chunk := handle.read(HASH_CHUNK):
             digest.update(chunk)
     return digest.hexdigest()

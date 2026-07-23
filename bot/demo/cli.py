@@ -1,4 +1,5 @@
 import argparse
+from pathlib import Path
 
 from demoparser2 import DemoParser
 
@@ -128,6 +129,19 @@ def ingest(demo_path: str) -> None:
         print("Nothing was stored; check the log.")
 
 
+def demo_path(value: str) -> str:
+    """Reject a missing demo before any subcommand runs.
+
+    Every subcommand takes the same argument, so validating it here means one
+    clear error instead of a parser stack trace per entry point.
+    """
+    if not value:
+        raise argparse.ArgumentTypeError("no demo given — set DEMO in .env")
+    if not Path(value).is_file():
+        raise argparse.ArgumentTypeError(f"no such demo: {value}")
+    return value
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(prog="bot.demo.cli")
     sub = ap.add_subparsers(dest="command", required=True)
@@ -141,7 +155,7 @@ def main() -> None:
         "ingest": ingest,
     }
     for name in handlers:
-        sub.add_parser(name).add_argument("demo")
+        sub.add_parser(name).add_argument("demo", type=demo_path)
 
     args = ap.parse_args()
     handlers[args.command](args.demo)

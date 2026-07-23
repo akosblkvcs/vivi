@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+from pathlib import Path
 
 import discord
 from discord import app_commands
@@ -49,8 +50,8 @@ async def ping(interaction: discord.Interaction) -> None:
 @client.tree.command(description="Parse a demo already on the server and roast the players")
 @app_commands.describe(filename="A .dem file sitting in the server's data/demos directory")
 async def roast(interaction: discord.Interaction, filename: str) -> None:
-    # Only the basename: a filename is user input and must not escape data/demos.
-    demo_path = demos_dir() / os.path.basename(filename)
+    # Only the final component: a filename is user input and must not escape data/demos.
+    demo_path = demos_dir() / Path(filename).name
     if not demo_path.is_file():
         await interaction.response.send_message(
             f"Nincs ilyen demo: `{demo_path.name}`", ephemeral=True

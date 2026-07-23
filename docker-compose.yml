@@ -1,0 +1,24 @@
+name: vivi
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: vivi-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: vivi
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "vivi"]
+      interval: 60s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  pg:

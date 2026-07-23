@@ -1,8 +1,7 @@
 [project]
 name = "vivi"
 version = "0.1.0"
-description = "Vivi — Discord bot"
-requires-python = ">=3.14"
+requires-python = ">=3.14,<3.15"
 dependencies = [
     "anthropic>=0.117.1",
     "awpy>=2.0.2",
@@ -14,19 +13,79 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "mypy>=1.18",
     "pandas-stubs>=3.0.3.260530",
     "ruff>=0.6",
 ]
+
+[tool.uv]
+package = false
+
+# ---- Linting ----------------------------------------------------------------
 
 [tool.ruff]
 line-length = 100
 target-version = "py314"
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "SIM"]
+select = [
+    "A",     # builtin shadowing
+    "ARG",   # unused arguments
+    "ASYNC", # blocking calls inside async defs
+    "B",     # bugbear
+    "C4",    # comprehensions
+    "C90",   # mccabe complexity
+    "DTZ",   # naive datetimes
+    "E",     # pycodestyle errors
+    "ERA",   # commented-out code
+    "F",     # pyflakes
+    "G",     # logging format
+    "I",     # import sorting
+    "N",     # pep8 naming
+    "PIE",   # misc lints
+    "PTH",   # pathlib over os.path
+    "RET",   # return simplification
+    "RSE",   # raise cleanup
+    "RUF",   # ruff-specific
+    "S",     # bandit security
+    "SIM",   # simplification
+    "SLF",   # private member access
+    "T20",   # stray print()
+    "UP",    # pyupgrade
+    "W",     # pycodestyle warnings
+]
+
+[tool.ruff.lint.per-file-ignores]
+"bot/demo/cli.py" = ["T20"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["bot"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 12
+
+[tool.ruff.format]
+docstring-code-format = true
+
+# ---- Type checking ----------------------------------------------------------
+
+[tool.mypy]
+strict = true
+warn_unreachable = true
+enable_error_code = [
+    "ignore-without-code",
+    "possibly-undefined",
+    "redundant-expr",
+    "truthy-bool",
+]
 
 [[tool.mypy.overrides]]
-# awpy ships no py.typed marker, so its symbols arrive untyped. Scoped to awpy
-# only — everything else stays strictly checked.
 module = ["awpy.*"]
 ignore_missing_imports = true
+
+[tool.pyright]
+typeCheckingMode = "strict"
+pythonVersion = "3.14"
+include = ["bot"]
+venvPath = "."
+venv = ".venv"
