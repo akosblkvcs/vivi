@@ -31,8 +31,8 @@ def _require(df: pd.DataFrame, event: str, *columns: str) -> None:
     missing = [c for c in columns if c not in df.columns]
     if missing:
         raise DemoSchemaError(
-            f"event {event!r} is missing {missing}; got {sorted(df.columns)}. "
-            f"Run `python -m bot.demo.cli discover <demo>` and adjust bot/demo/stats.py."
+            f"event {event!r} is missing {missing}; got {sorted(df.columns)}; "
+            f"run `python -m bot.cli discover <demo>` and adjust bot/demo/stats.py"
         )
 
 

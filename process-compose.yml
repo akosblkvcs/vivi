@@ -22,7 +22,7 @@ processes:
     command: |
       uv sync --locked &&
       uv run python -m bot.main
-    ready_log_line: "Connected as"
+    ready_log_line: "connected as"
     log_location: ./logs/bot.log
     availability:
       exit_on_end: true
@@ -33,22 +33,10 @@ processes:
       signal: 15
       timeout_seconds: 5
 
-  ingest:
-    # Backfill an old demo's metrics without roasting it; baselines need several matches.
-    disabled: true
-    command: uv run python -m bot.demo.cli ingest "$DEMO"
-    log_location: ./logs/ingest.log
-    availability:
-      restart: "no"
-      exit_on_end: false
-    depends_on:
-      postgres:
-        condition: process_log_ready
-
   baselines:
     # How this match compares to each player's stored history.
     disabled: true
-    command: uv run python -m bot.demo.cli baselines "$DEMO"
+    command: uv run python -m bot.cli baselines "$DEMO"
     log_location: ./logs/baselines.log
     availability:
       restart: "no"
@@ -57,11 +45,11 @@ processes:
       postgres:
         condition: process_log_ready
 
-  roast:
-    # Full roast to stdout, no Discord round-trip. Needs ANTHROPIC_API_KEY.
+  analyze:
+    # Full analysis to stdout, no Discord round-trip. Needs ANTHROPIC_API_KEY.
     disabled: true
-    command: uv run python -m bot.demo.cli roast "$DEMO"
-    log_location: ./logs/roast.log
+    command: uv run python -m bot.cli analyze "$DEMO"
+    log_location: ./logs/analyze.log
     availability:
       restart: "no"
       exit_on_end: false
@@ -69,7 +57,7 @@ processes:
   summary:
     # Exactly the text that gets handed to Claude.
     disabled: true
-    command: uv run python -m bot.demo.cli summary "$DEMO"
+    command: uv run python -m bot.cli summary "$DEMO"
     log_location: ./logs/summary.log
     availability:
       restart: "no"
@@ -78,7 +66,7 @@ processes:
   stats:
     # Scoreboard and shame board for one demo.
     disabled: true
-    command: uv run python -m bot.demo.cli stats "$DEMO"
+    command: uv run python -m bot.cli stats "$DEMO"
     log_location: ./logs/stats.log
     availability:
       restart: "no"
@@ -87,8 +75,17 @@ processes:
   players:
     # Every player with their SteamID and how the roster classifies them.
     disabled: true
-    command: uv run python -m bot.demo.cli players "$DEMO"
+    command: uv run python -m bot.cli players "$DEMO"
     log_location: ./logs/players.log
+    availability:
+      restart: "no"
+      exit_on_end: false
+
+  witnessed:
+    # Untraded deaths a living teammate had a clear line of sight to.
+    disabled: true
+    command: uv run python -m bot.cli witnessed "$DEMO"
+    log_location: ./logs/witnessed.log
     availability:
       restart: "no"
       exit_on_end: false
@@ -96,7 +93,7 @@ processes:
   discover:
     # What a demo actually exposes, so stats.py can be matched to reality.
     disabled: true
-    command: uv run python -m bot.demo.cli discover "$DEMO"
+    command: uv run python -m bot.cli discover "$DEMO"
     log_location: ./logs/discover.log
     availability:
       restart: "no"

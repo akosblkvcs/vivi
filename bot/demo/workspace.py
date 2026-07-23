@@ -4,7 +4,7 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 
-DATA_DIR = Path(__file__).resolve().parents[2] / "data"
+from bot.config import DATA_DIR
 
 
 def demos_dir() -> Path:

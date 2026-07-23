@@ -56,13 +56,10 @@ select = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"bot/demo/cli.py" = ["T20"]
+"bot/cli.py" = ["T20"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["bot"]
-
-[tool.ruff.lint.mccabe]
-max-complexity = 12
 
 [tool.ruff.format]
 docstring-code-format = true

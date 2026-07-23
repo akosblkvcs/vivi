@@ -1,16 +1,11 @@
-"""Compare each player against their own past matches.
-
-anomaly.py answers "who was the outlier in this lobby". This answers "was this
-normal *for them*", which is a different and less repeatable question: the
-comparison target moves every match, so the same joke cannot come back.
-"""
+"""Compare each player against their own past matches."""
 
 import statistics
 from dataclasses import dataclass
 
 from bot import history
 from bot.demo.analysis import MatchContext
-from bot.demo.anomaly import METRICS, Metric
+from bot.demo.metrics import METRICS, Metric
 
 # Below this a mean is just the last couple of matches, and a deviation from it
 # says nothing. Kept low so the feature starts paying off early.
@@ -70,7 +65,7 @@ class Deviation:
             f"over {SIGMA_DISPLAY_CAP:.0f}" if magnitude > SIGMA_DISPLAY_CAP else f"{magnitude:.1f}"
         )
         return (
-            f"- {self.display} [{self.role}]: {self.metric.label} "
+            f"- {self.display}: {self.metric.label} "
             f"{self.metric.fmt.format(self.value)} vs their own average "
             f"{self.metric.fmt.format(self.mean)} over {self.samples} past matches "
             f"— {shown} sigma {direction}"
@@ -101,7 +96,7 @@ class Record:
     def render(self) -> str:
         kind = "highest" if self.is_high else "lowest"
         return (
-            f"- {self.display} [{self.role}]: {self.metric.label} "
+            f"- {self.display}: {self.metric.label} "
             f"{self.metric.fmt.format(self.value)} is their {kind} in "
             f"{self.samples + 1} matches (previous {kind}: "
             f"{self.metric.fmt.format(self.previous)})"

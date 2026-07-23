@@ -51,11 +51,16 @@ def _by_steamid(frame: pl.DataFrame, column: str) -> dict[str, float]:
     }
 
 
-def compute_advanced(demo_path: str | Path) -> AdvancedMetrics:
-    """Parse with awpy and extract the advanced metrics.
+def compute_advanced(demo_path: str | Path) -> tuple[AdvancedMetrics, pl.DataFrame]:
+    """Parse with awpy and return the advanced metrics and the position ticks.
 
-    Failure here must not take the whole roast down: these numbers are a bonus
-    on top of the demoparser2 stats, not a prerequisite.
+    One parse yields both: awpy records every player's position on every tick as
+    a side effect of the stats, so line of sight (visibility.py) rides along for
+    free rather than paying for a second parse.
+
+    Failure here must not take the whole analysis down: these are a bonus on top
+    of the demoparser2 stats, not a prerequisite. On failure the caller gets
+    empty metrics and an empty tick frame and carries on.
     """
     try:
         demo = Demo(Path(demo_path), tickrate=VALVE_TICKRATE)
@@ -69,7 +74,7 @@ def compute_advanced(demo_path: str | Path) -> AdvancedMetrics:
             rounds=int(adr_frame.filter(pl.col("side") == "all")["n_rounds"].max() or 0),
         )
         logging.info("awpy metrics computed for %d players", len(metrics.rating))
-        return metrics
+        return metrics, demo.ticks
     except Exception:
         logging.exception("awpy metrics failed; continuing without them")
-        return AdvancedMetrics()
+        return AdvancedMetrics(), pl.DataFrame()

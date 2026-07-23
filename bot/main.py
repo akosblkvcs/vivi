@@ -7,15 +7,15 @@ import discord
 from discord import app_commands
 from dotenv import load_dotenv
 
-from bot import config, delivery, history
+from bot import config, db, delivery, history
+from bot.analyze import generate_analysis
 from bot.demo.analysis import build_context
 from bot.demo.workspace import demos_dir, purge_orphans
-from bot.roast import generate_roast
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
 
-TOKEN = os.environ["DISCORD_TOKEN"]
+DISCORD_TOKEN = os.environ["DISCORD_TOKEN"]
 GUILD_ID = int(os.environ["GUILD_ID"])
 
 
@@ -36,10 +36,10 @@ client = Vivi()
 @client.event
 async def on_ready() -> None:
     if (user := client.user) is not None:
-        logging.info("Connected as %s (%s)", user, user.id)
+        logging.info("connected as %s (%s)", user, user.id)
     logging.info("DEBUG=%s", config.debug_mode())
     purge_orphans()
-    history.init_schema()
+    db.init_schema()
 
 
 @client.tree.command(description="Health check")
@@ -47,37 +47,37 @@ async def ping(interaction: discord.Interaction) -> None:
     await interaction.response.send_message("pong", ephemeral=True)
 
 
-@client.tree.command(description="Parse a demo already on the server and roast the players")
-@app_commands.describe(filename="A .dem file sitting in the server's data/demos directory")
-async def roast(interaction: discord.Interaction, filename: str) -> None:
-    # Only the final component: a filename is user input and must not escape data/demos.
+@client.tree.command(description="Analyze a CS2 match")
+@app_commands.describe(filename="Name of the .dem file")
+async def analyze(interaction: discord.Interaction, filename: str) -> None:
     demo_path = demos_dir() / Path(filename).name
     if not demo_path.is_file():
-        await interaction.response.send_message(
-            f"Nincs ilyen demo: `{demo_path.name}`", ephemeral=True
-        )
+        await interaction.response.send_message(f"No such demo: `{demo_path.name}`", ephemeral=True)
         return
 
     await interaction.response.defer(thinking=True, ephemeral=True)
     try:
         # Parsing and the API call both block; keep the gateway heartbeat alive.
         ctx = await asyncio.to_thread(build_context, str(demo_path))
-        # Store before roasting, so the match survives an API failure. Baselines
-        # exclude it by demo_key, so it cannot contaminate its own comparison.
+
+        # Store before analyzing, so the match survives an API failure.
         await asyncio.to_thread(history.record_match, ctx)
-        text = await asyncio.to_thread(generate_roast, ctx)
+
+        # Generate the analysis.
+        text = await asyncio.to_thread(generate_analysis, ctx)
+
+        # Deliver the analysis to the appropriate channel.
         await delivery.deliver(client, text)
     except Exception:
-        logging.exception("roast failed for %s", demo_path.name)
-        await interaction.followup.send("Elszállt a feldolgozás, nézd a logot.", ephemeral=True)
+        logging.exception("analysis failed for %s", demo_path.name)
+        await interaction.followup.send("Something went wrong, check the logs.", ephemeral=True)
         return
 
-    where = "DM-ben" if config.debug_mode() else "a csatornába"
-    await interaction.followup.send(f"Kész, elküldtem {where}.", ephemeral=True)
+    await interaction.followup.send("Done", ephemeral=True)
 
 
 def main() -> None:
-    client.run(TOKEN)
+    client.run(DISCORD_TOKEN)
 
 
 if __name__ == "__main__":

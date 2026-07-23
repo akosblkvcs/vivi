@@ -2,9 +2,9 @@ import json
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Literal, cast
 
-from bot.demo.workspace import DATA_DIR
+from bot.config import DATA_DIR
 
 Role = Literal["self", "friend", "unknown"]
 
@@ -13,17 +13,11 @@ ROSTER_PATH = DATA_DIR / "friends.json"
 
 @dataclass(frozen=True)
 class Person:
-    """Someone the bot knows.
-
-    Identity is the SteamID, never the in-game name: people rename themselves and
-    some of them play on more than one account. `name` is what the bot calls them
-    in its replies, which is deliberately not their in-game name.
-    """
+    """Someone the bot knows."""
 
     steamids: tuple[str, ...]
     name: str
     role: Role
-    note: str = ""
 
 
 class Roster:
@@ -47,16 +41,6 @@ class Roster:
         person = self._by_id.get(steamid)
         return person.name if person else ingame_name
 
-    @property
-    def notes(self) -> list[tuple[str, str]]:
-        seen: set[str] = set()
-        out: list[tuple[str, str]] = []
-        for person in self._by_id.values():
-            if person.note and person.name not in seen:
-                seen.add(person.name)
-                out.append((person.name, person.note))
-        return out
-
     def __len__(self) -> int:
         return len({p.name for p in self._by_id.values()})
 
@@ -64,21 +48,25 @@ class Roster:
 def _steamids(entry: dict[str, object]) -> tuple[str, ...]:
     """Accept either a single `steamid` or a list of `steamids`."""
     raw = entry.get("steamids") or entry.get("steamid")
+
     if isinstance(raw, str):
         return (raw,)
     if isinstance(raw, list):
-        return tuple(str(item) for item in raw)
+        return tuple(str(item) for item in cast(list[object], raw))
+
     return ()
 
 
 def load_roster(path: Path | None = None) -> Roster:
     target = path or ROSTER_PATH
+
     if not target.is_file():
-        logging.warning("no roster at %s — everyone will be treated as a stranger", target)
+        logging.warning("no roster at %s, treating everyone as a stranger", target)
         return Roster([])
 
     raw = json.loads(target.read_text(encoding="utf-8"))
     people: list[Person] = []
+
     for entry in raw["players"]:
         steamids = _steamids(entry)
         if not steamids:
@@ -94,9 +82,9 @@ def load_roster(path: Path | None = None) -> Roster:
                 steamids=steamids,
                 name=entry["name"],
                 role=role,
-                note=entry.get("note", ""),
             )
         )
+
     logging.info(
         "roster loaded: %d people, %d steamids", len(people), sum(len(p.steamids) for p in people)
     )
