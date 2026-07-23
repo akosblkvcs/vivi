@@ -50,11 +50,25 @@ def _client() -> anthropic.Anthropic:
 
 
 def _roster_notes(ctx: MatchContext) -> str:
+    """Background colour only.
+
+    These running jokes go stale fast if the recap is built around them, so the
+    prompt is explicit that a note may only be used when this match's data
+    independently shows the trait happening.
+    """
     notes = ctx.roster.notes
     if not notes:
         return ""
     lines = "\n".join(f"- {name}: {note}" for name, note in notes)
-    return f"\n\nNotes on specific people:\n{lines}\n"
+    return (
+        "\n\nBACKGROUND ON THESE PEOPLE\n"
+        "Long-running traits, for flavour only. Do NOT build the recap around them "
+        "and do not mention a trait just because it is listed here — it gets stale "
+        "fast. Use one only when something you found in the data this match is a "
+        "genuine instance of it, and let the data lead. Most recaps should reference "
+        "none of these at all.\n"
+        f"{lines}\n"
+    )
 
 
 def generate_roast(ctx: MatchContext, *, persona: str = "") -> str:

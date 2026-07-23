@@ -94,20 +94,56 @@ def show_players(demo_path: str) -> None:
         print(f"{p.name:<16} {p.steamid:<20} [{role}]{alias}")
 
 
+def show_baselines(demo_path: str) -> None:
+    """Print how this match compares to each player's stored history."""
+    from dotenv import load_dotenv
+
+    from bot import history
+    from bot.demo.analysis import build_context
+    from bot.demo.baseline import baseline_report
+
+    load_dotenv()
+    history.init_schema()
+    print(baseline_report(build_context(demo_path)))
+
+
+def ingest(demo_path: str) -> None:
+    """Store a demo's metrics without roasting it.
+
+    Baselines only mean something once several matches are recorded, so old
+    demos are worth backfilling before the first real run.
+    """
+    from dotenv import load_dotenv
+
+    from bot import history
+    from bot.demo.analysis import build_context
+
+    load_dotenv()
+    if not history.init_schema():
+        print("No database configured — set DATABASE_URL first.")
+        return
+    if history.record_match(build_context(demo_path)):
+        print(f"Stored. History now holds {history.match_count()} matches.")
+    else:
+        print("Nothing was stored; check the log.")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(prog="bot.demo.cli")
     sub = ap.add_subparsers(dest="command", required=True)
-    for name in ("stats", "discover", "summary", "roast", "players"):
-        sub.add_parser(name).add_argument("demo")
-
-    args = ap.parse_args()
     handlers = {
         "discover": discover,
         "stats": show_stats,
         "summary": show_summary,
         "roast": show_roast,
         "players": show_players,
+        "baselines": show_baselines,
+        "ingest": ingest,
     }
+    for name in handlers:
+        sub.add_parser(name).add_argument("demo")
+
+    args = ap.parse_args()
     handlers[args.command](args.demo)
 
 

@@ -5,8 +5,10 @@ description = "Vivi — Discord bot"
 requires-python = ">=3.14"
 dependencies = [
     "anthropic>=0.117.1",
+    "awpy>=2.0.2",
     "demoparser2>=0.41.4",
     "discord.py>=2.4",
+    "psycopg[binary]>=3.2",
     "python-dotenv>=1.0",
 ]
 
@@ -22,3 +24,9 @@ target-version = "py314"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[[tool.mypy.overrides]]
+# awpy ships no py.typed marker, so its symbols arrive untyped. Scoped to awpy
+# only — everything else stays strictly checked.
+module = ["awpy.*"]
+ignore_missing_imports = true

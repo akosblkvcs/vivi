@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 import pandas as pd
 from demoparser2 import DemoParser
 
+from bot.demo.awpy_metrics import AdvancedMetrics, compute_advanced
 from bot.demo.coerce import as_int, as_steamid
 from bot.demo.models import MatchStats
 from bot.demo.stats import compute_match_stats
@@ -55,6 +56,10 @@ class MatchContext:
     blinds: pd.DataFrame
     hurts: pd.DataFrame
     kills: list[Kill] = field(default_factory=list[Kill])
+    advanced: AdvancedMetrics = field(default_factory=AdvancedMetrics)
+    # Content hash of the demo, used to store and to exclude this match from its
+    # own baselines. Empty when the file could not be hashed.
+    demo_key: str = ""
 
     def display(self, steamid: str, ingame_name: str) -> str:
         return self.roster.display(steamid, ingame_name)
@@ -106,6 +111,17 @@ def _mark_trades(kills: list[Kill]) -> None:
                 break
 
 
+def _demo_key(demo_path: str) -> str:
+    """Hash the demo for history lookups; a failure here only costs baselines."""
+    from bot.history import demo_key
+
+    try:
+        return demo_key(demo_path)
+    except OSError:
+        logging.exception("could not hash %s; this match will not be stored", demo_path)
+        return ""
+
+
 def build_context(demo_path: str, roster: Roster | None = None) -> MatchContext:
     parser = DemoParser(demo_path)
     deaths = parser.parse_event("player_death", player=["team_num"], other=["total_rounds_played"])
@@ -120,6 +136,8 @@ def build_context(demo_path: str, roster: Roster | None = None) -> MatchContext:
         blinds=blinds,
         hurts=hurts,
         kills=_build_kills(deaths),
+        advanced=compute_advanced(demo_path),
+        demo_key=_demo_key(demo_path),
     )
 
 
@@ -128,11 +146,22 @@ def build_context(demo_path: str, roster: Roster | None = None) -> MatchContext:
 
 def scoreboard(ctx: MatchContext) -> str:
     lines = [f"MAP: {ctx.stats.map_name}, {ctx.stats.rounds} rounds", ""]
-    for p in sorted(ctx.stats.players.values(), key=lambda p: p.kills, reverse=True):
+    ranked = sorted(
+        ctx.stats.players.values(),
+        key=lambda p: ctx.advanced.rating.get(p.steamid, float(p.kills)),
+        reverse=True,
+    )
+    for p in ranked:
+        adv = ctx.advanced.for_player(p.steamid)
+        extra = (
+            f", rating {adv['rating']:.2f}, ADR {adv['adr']:.0f}, KAST {adv['kast']:.0f}%"
+            if not ctx.advanced.is_empty
+            else ""
+        )
         lines.append(
             f"- {ctx.tagged(p.steamid, p.name)}: {p.kills}K/{p.deaths}D/{p.assists}A, "
             f"K/D {p.kd:.2f}, {p.headshot_kills} hs, accuracy {p.accuracy:.0%} "
-            f"({p.shots_hit}/{p.shots_fired})"
+            f"({p.shots_hit}/{p.shots_fired}){extra}"
         )
     return "\n".join(lines)
 
@@ -305,3 +334,27 @@ def utility_report(ctx: MatchContext) -> str:
             f"teamkills {p.teamkills}"
         )
     return "\n".join(lines) if len(lines) > 1 else "Nobody teamflashed or team-damaged."
+
+
+def advanced_metrics(ctx: MatchContext) -> str:
+    """Rating / ADR / KAST / impact, ranked by rating."""
+    if ctx.advanced.is_empty:
+        return "Advanced metrics are unavailable for this demo."
+
+    lines = [
+        "Rating is HLTV-style (1.0 is average). KAST is the share of rounds where",
+        "a player got a kill, assist, survived, or was traded. ADR is damage per round.",
+        "",
+    ]
+    ranked = sorted(
+        ctx.stats.players.values(),
+        key=lambda p: ctx.advanced.rating.get(p.steamid, 0.0),
+        reverse=True,
+    )
+    for p in ranked:
+        adv = ctx.advanced.for_player(p.steamid)
+        lines.append(
+            f"- {ctx.tagged(p.steamid, p.name)}: rating {adv['rating']:.2f}, "
+            f"ADR {adv['adr']:.1f}, KAST {adv['kast']:.0f}%, impact {adv['impact']:.2f}"
+        )
+    return "\n".join(lines)

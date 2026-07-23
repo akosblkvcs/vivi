@@ -6,7 +6,7 @@ import discord
 from discord import app_commands
 from dotenv import load_dotenv
 
-from bot import config, delivery
+from bot import config, delivery, history
 from bot.demo.analysis import build_context
 from bot.demo.workspace import demos_dir, purge_orphans
 from bot.roast import generate_roast
@@ -38,6 +38,7 @@ async def on_ready() -> None:
         logging.info("Connected as %s (%s)", user, user.id)
     logging.info("DEBUG=%s", config.debug_mode())
     purge_orphans()
+    history.init_schema()
 
 
 @client.tree.command(description="Health check")
@@ -60,6 +61,9 @@ async def roast(interaction: discord.Interaction, filename: str) -> None:
     try:
         # Parsing and the API call both block; keep the gateway heartbeat alive.
         ctx = await asyncio.to_thread(build_context, str(demo_path))
+        # Store before roasting, so the match survives an API failure. Baselines
+        # exclude it by demo_key, so it cannot contaminate its own comparison.
+        await asyncio.to_thread(history.record_match, ctx)
         text = await asyncio.to_thread(generate_roast, ctx)
         await delivery.deliver(client, text)
     except Exception:

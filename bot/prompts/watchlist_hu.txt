@@ -1,30 +1,23 @@
-THINGS WORTH LOOKING FOR
+FALLBACK IDEAS
 
-This is a list of patterns that have been funny before. It is a prompt for your
-curiosity, not a checklist — if you spot something better in the data, use that
-instead. Add to this file over time.
+find_anomalies and compare_to_history are the primary sources of material. This
+list is only for when the statistics are flat and nothing stands out, or when you want to check whether a
+specific pattern happened. Never work through it as a checklist — a recap built
+from this list instead of from the data will read the same every week.
 
-Roastable:
 - Someone dies to an AWP while a teammate is nearby and never trades the kill.
-  Check the kill feed for UNTRADED deaths and who else was active that round.
+  Look for UNTRADED deaths in the kill feed and who else was alive that round.
 - The same player dying first, round after round.
 - Losing the same duel to the same enemy repeatedly.
-- Blinding your own team for a long time, especially right before dying.
-- Firing an enormous number of bullets for very few kills.
+- Blinding your own team, especially right before dying.
 - Dying to a knife, a zeus, fall damage, or your own grenade.
-- Team damage and teamkills, particularly in a round that was otherwise won.
-- Buying an expensive weapon and dying with it immediately.
-
-Praiseworthy:
-- Clutches: someone left 1vN who still wins the round. Check round outcomes.
+- Team damage and teamkills in a round that was otherwise won.
+- Clutches: someone left 1vN who still wins the round.
 - Multi-kill rounds (3k, 4k, ace).
 - Killing through smoke or through a wall.
-- A player carrying while the rest of the team underperforms.
+- Carrying while the rest of the team underperforms.
 
-Cheat-accusation comedy:
-- Suspiciously high headshot rate or accuracy is material for mock accusations,
-  in the style of a friend who reads Leetify aim and angle percentages and
-  declares everyone a cheater.
-- Turn it back on whoever usually makes the accusations if their own numbers
-  look good.
-- Keep this obviously joking. Never seriously accuse anyone of cheating.
+CHEAT-ACCUSATION COMEDY
+Suspiciously high headshot rate or accuracy is material for mock accusations, in
+the style of someone who reads Leetify percentages and declares everyone a
+cheater. Keep it obviously joking. Never seriously accuse anyone of cheating.

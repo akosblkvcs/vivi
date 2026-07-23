@@ -6,6 +6,8 @@ for each lens, not just what it returns.
 
 from bot.demo import analysis
 from bot.demo.analysis import MatchContext
+from bot.demo.anomaly import anomaly_report
+from bot.demo.baseline import baseline_report
 
 _current: MatchContext | None = None
 
@@ -77,8 +79,47 @@ def get_suspicion_metrics() -> str:
     return analysis.suspicion_metrics(_ctx())
 
 
+def find_anomalies() -> str:
+    """Statistical outliers: what actually stands out in this match, computed not guessed.
+
+    Every player-metric pair is compared against the lobby average and ranked by
+    how many standard deviations it sits away, split into unusually bad and
+    unusually good. THIS IS THE BEST STARTING POINT for finding material —
+    it tells you what is genuinely unusual about this specific match rather than
+    what is merely true of every match. Follow up with the kill feed or a player
+    profile to find out why an outlier happened.
+    """
+    return anomaly_report(_ctx())
+
+
+def compare_to_history() -> str:
+    """How each player did against THEIR OWN past matches, not against this lobby.
+
+    This is the strongest material there is: it distinguishes "he is bad" from
+    "he was bad tonight", and it names personal bests and personal worsts. Call
+    it alongside find_anomalies — an outlier that is also unusual for that
+    person is far more interesting than one that is just how they always play.
+    Returns a note instead if too little history has been recorded yet.
+    """
+    return baseline_report(_ctx())
+
+
+def get_advanced_metrics() -> str:
+    """Rating, ADR, KAST and impact for every player, ranked.
+
+    These say far more about who actually played well than kills do. A player
+    with a high kill count but low KAST was dying pointlessly; a player with low
+    kills but high ADR was doing the damage someone else finished off. Reach for
+    this before deciding who to praise or roast.
+    """
+    return analysis.advanced_metrics(_ctx())
+
+
 ALL_TOOLS = (
+    find_anomalies,
+    compare_to_history,
     get_scoreboard,
+    get_advanced_metrics,
     get_kill_feed,
     get_player_profile,
     get_round_outcomes,
