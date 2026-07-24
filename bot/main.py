@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import os
-from pathlib import Path
 
 import discord
 from discord import app_commands
@@ -10,6 +9,8 @@ from dotenv import load_dotenv
 from bot import config, db, delivery, history
 from bot.analyze import generate_analysis
 from bot.demo.analysis import build_context
+from bot.demo.download import DownloadError, download_demo
+from bot.demo.sharecode import ShareCodeError
 from bot.demo.workspace import demos_dir, purge_orphans
 
 load_dotenv()
@@ -47,31 +48,33 @@ async def ping(interaction: discord.Interaction) -> None:
     await interaction.response.send_message("pong", ephemeral=True)
 
 
-@client.tree.command(description="Analyze a CS2 match")
-@app_commands.describe(filename="Name of the .dem file")
-async def analyze(interaction: discord.Interaction, filename: str) -> None:
-    demo_path = demos_dir() / Path(filename).name
-    if not demo_path.is_file():
-        await interaction.response.send_message(f"No such demo: `{demo_path.name}`", ephemeral=True)
+@client.tree.command(description="Analyze a CS2 match from its share code")
+@app_commands.describe(sharecode="Match share code, e.g. CSGO-xxxxx-xxxxx-xxxxx-xxxxx-xxxxx")
+async def analyze(interaction: discord.Interaction, sharecode: str) -> None:
+    await interaction.response.defer(thinking=True, ephemeral=True)
+
+    # Downloading, parsing and the API call all block; keep the heartbeat alive.
+    try:
+        demo_path = await asyncio.to_thread(download_demo, sharecode, demos_dir())
+    except (ShareCodeError, DownloadError) as exc:
+        await interaction.followup.send(f"Couldn't fetch that demo: {exc}", ephemeral=True)
         return
 
-    await interaction.response.defer(thinking=True, ephemeral=True)
     try:
-        # Parsing and the API call both block; keep the gateway heartbeat alive.
         ctx = await asyncio.to_thread(build_context, str(demo_path))
 
         # Store before analyzing, so the match survives an API failure.
         await asyncio.to_thread(history.record_match, ctx)
 
-        # Generate the analysis.
         text = await asyncio.to_thread(generate_analysis, ctx)
-
-        # Deliver the analysis to the appropriate channel.
         await delivery.deliver(client, text)
     except Exception:
-        logging.exception("analysis failed for %s", demo_path.name)
+        logging.exception("analysis failed for %s", sharecode)
         await interaction.followup.send("Something went wrong, check the logs.", ephemeral=True)
         return
+    finally:
+        # The demo is only needed long enough to parse; never leave it on disk.
+        demo_path.unlink(missing_ok=True)
 
     await interaction.followup.send("Done", ephemeral=True)
 

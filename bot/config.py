@@ -21,3 +21,8 @@ def channel_id() -> int | None:
 
 def database_url() -> str | None:
     return os.environ.get("DATABASE_URL", "").strip() or None
+
+
+def demo_resolver() -> str | None:
+    """Command that prints a demo URL for a share code (see bot/demo/download.py)."""
+    return os.environ.get("DEMO_RESOLVER", "").strip() or None

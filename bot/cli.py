@@ -92,6 +92,17 @@ def baselines(demo_path: str) -> None:
     print(baseline_report(build_context(demo_path)))
 
 
+def download(sharecode: str) -> None:
+    """Fetch a demo from its share code (needs DEMO_RESOLVER) and print its path."""
+    from dotenv import load_dotenv
+
+    from bot.demo.download import download_demo
+    from bot.demo.workspace import demos_dir
+
+    load_dotenv()
+    print(f"Downloaded to {download_demo(sharecode, demos_dir())}")
+
+
 def demo_path(value: str) -> str:
     """Reject a missing demo before any subcommand runs."""
     if not value:
@@ -104,13 +115,17 @@ def demo_path(value: str) -> str:
 def main() -> None:
     ap = argparse.ArgumentParser(prog="bot.cli")
     sub = ap.add_subparsers(dest="command", required=True)
-    commands = (discover, stats, summary, analyze, witnessed, players, baselines)
-    handlers = {fn.__name__: fn for fn in commands}
-    for name in handlers:
-        sub.add_parser(name).add_argument("demo", type=demo_path)
+
+    demo_commands = (discover, stats, summary, analyze, witnessed, players, baselines)
+    for fn in demo_commands:
+        sub.add_parser(fn.__name__).add_argument("demo", type=demo_path)
+    sub.add_parser("download").add_argument("sharecode")
 
     args = ap.parse_args()
-    handlers[args.command](args.demo)
+    if args.command == "download":
+        download(args.sharecode)
+    else:
+        {fn.__name__: fn for fn in demo_commands}[args.command](args.demo)
 
 
 if __name__ == "__main__":

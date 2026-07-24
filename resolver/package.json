@@ -1,0 +1,13 @@
+{
+  "name": "vivi-resolver",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Resolve a CS2 match share code to its demo URL via the Steam Game Coordinator.",
+  "main": "resolve.js",
+  "type": "commonjs",
+  "dependencies": {
+    "globaloffensive": "^3.1.2",
+    "steam-totp": "^2.1.2",
+    "steam-user": "^5.2.0"
+  }
+}
